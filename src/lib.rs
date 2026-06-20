@@ -1,17 +1,14 @@
 //! `avif-rust` — encode and decode AVIF images via libavif.
 //!
-//! The libavif C library (plus its codec/support dependencies) is downloaded as a
-//! prebuilt **static** library at build time and linked directly into this crate, so
-//! consumers do not need libavif installed on the host. See `build.rs`.
+//! The libavif C library (plus its codec/support dependencies) is downloaded as a prebuilt **static** library at build
+//! time and linked directly into this crate, so consumers do not need libavif installed on the host. See `build.rs`.
 //!
 //! Encoding uses **SVT-AV1** and decoding uses **dav1d**, both statically linked.
 //!
 //! The API mirrors the `image` crate's codec conventions:
-//! * [`AvifEncoder`] / [`AvifDecoder`] implement `image`'s `ImageEncoder` / `ImageDecoder`
-//!   traits, so they plug into `DynamicImage::write_with_encoder` / `DynamicImage::from_decoder`
-//!   just like the codecs bundled with `image`.
-//! * a thin facade ([`encode`], [`encode_buffer`], [`decode`], [`probe`]) wraps those for
-//!   one-line convenience.
+//! * [`AvifEncoder`] / [`AvifDecoder`] implement `image`'s `ImageEncoder` / `ImageDecoder` traits, so they plug into
+//! `DynamicImage::write_with_encoder` / `DynamicImage::from_decoder` just like the codecs bundled with `image`.
+//! * a thin facade ([`encode`], [`encode_buffer`], [`decode`], [`probe`]) wraps those for one-line convenience.
 
 mod decoder;
 mod encoder;
@@ -40,7 +37,7 @@ pub fn libavif_version() -> String {
     }
 }
 
-/// Encode a [`DynamicImage`] to AV1/AVIF bytes using sensible defaults.
+/// Encode a [`DynamicImage`] to AVIF bytes using sensible defaults.
 ///
 /// # Example
 /// ```no_run
@@ -76,7 +73,7 @@ where
     Ok(buf)
 }
 
-/// Decode AV1/AVIF bytes into a [`DynamicImage`].
+/// Decode AVIF bytes into a [`DynamicImage`].
 ///
 /// # Example
 /// ```no_run

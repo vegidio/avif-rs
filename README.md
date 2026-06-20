@@ -63,6 +63,22 @@ println!("{}x{} @ {:?}", info.width, info.height, info.bit_depth);
 
 The public API also exposes [`encode_buffer`] (encode a typed `ImageBuffer` directly), [`AvifEncoder`] / [`AvifDecoder`] for `image`-trait integration, [`EncoderConfig`] / [`DecoderConfig`] for full control, and [`libavif_version`].
 
+#### Runnable examples
+
+The [`examples/`](examples) directory has standalone programs covering each part of the API, runnable out of the box against the bundled assets:
+
+```bash
+cargo run --example encode          # encode with defaults
+cargo run --example decode          # decode an AVIF to PNG
+cargo run --example custom_encoder  # AvifEncoder builder (quality/speed/threads)
+cargo run --example encode_buffer   # encode a typed ImageBuffer
+cargo run --example probe           # read the header without decoding pixels
+cargo run --example roundtrip       # encode then decode
+cargo run --example high_bit_depth  # 10-bit encoding via EncoderConfig
+cargo run --example parallel_encode # concurrent encoding (safe, uniform config)
+cargo run --example version         # print the linked libavif version
+```
+
 ## 💣 Troubleshooting
 
 ### Encoding in parallel with different configurations crashes
