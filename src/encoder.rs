@@ -12,26 +12,34 @@ use image::{ExtendedColorType, ImageEncoder, ImageResult};
 use crate::info::BitDepth;
 
 /// Tunable parameters for the SVT-AV1 encoder.
+///
+/// Field names, ranges, and defaults mirror libavif / the `avifenc` CLI.
 pub struct EncoderConfig {
-    /// SVT-AV1 speed preset 0–13, default 8.
-    pub preset: u8,
-    /// Constant Rate Factor 0–63, default 35.
-    pub crf: u8,
-    /// Worker threads; `None` = auto-detect.
+    /// Encoder speed, range 0–10 (slower = better quality per byte); default 6.
+    /// Maps to `avifEncoder.speed`.
+    pub speed: u8,
+    /// Color quality, range 0–100 (higher = better); default 60.
+    /// Maps to `avifEncoder.quality`.
+    pub quality: u8,
+    /// Alpha quality, range 0–100 (higher = better); default 60.
+    /// Maps to `avifEncoder.qualityAlpha`.
+    pub quality_alpha: u8,
+    /// Worker threads; `None` = auto-detect. Maps to `avifEncoder.maxThreads`.
     pub threads: Option<u32>,
     /// Output bit depth, default [`BitDepth::Eight`].
     pub bit_depth: BitDepth,
-    /// Tile columns, default 0 (auto).
+    /// Tile columns, default 0 (auto). Maps to `avifEncoder.tileColsLog2` / `autoTiling`.
     pub tile_columns: u8,
-    /// Tile rows, default 0 (auto).
+    /// Tile rows, default 0 (auto). Maps to `avifEncoder.tileRowsLog2` / `autoTiling`.
     pub tile_rows: u8,
 }
 
 impl Default for EncoderConfig {
     fn default() -> Self {
         Self {
-            preset: 8,
-            crf: 35,
+            speed: 6,
+            quality: 60,
+            quality_alpha: 60,
             threads: None,
             bit_depth: BitDepth::Eight,
             tile_columns: 0,
@@ -71,13 +79,18 @@ impl<W: Write> AvifEncoder<W> {
         Self { writer: w, config }
     }
 
-    pub fn with_preset(mut self, preset: u8) -> Self {
-        self.config.preset = preset;
+    pub fn with_speed(mut self, speed: u8) -> Self {
+        self.config.speed = speed;
         self
     }
 
-    pub fn with_crf(mut self, crf: u8) -> Self {
-        self.config.crf = crf;
+    pub fn with_quality(mut self, quality: u8) -> Self {
+        self.config.quality = quality;
+        self
+    }
+
+    pub fn with_quality_alpha(mut self, quality_alpha: u8) -> Self {
+        self.config.quality_alpha = quality_alpha;
         self
     }
 
