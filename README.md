@@ -1,6 +1,6 @@
 # avif-rs
 
-A Rust library to encode AVIF images using SVT-AV1 and decode using dav1d.
+A Rust library to encode and decode AVIF images using SVT-AV1 and dav1d, via statically-linked libavif.
 
 ## ⬇️ Installation
 
