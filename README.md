@@ -31,7 +31,6 @@ std::fs::write("/path/to/image.avif", &bytes).unwrap(); // save the AVIF to a fi
 
 ```rust
 use avif::AvifEncoder;
-use image::ImageEncoder;
 
 let img = image::open("/path/to/image.png").unwrap();
 let mut bytes = Vec::new();
