@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Encode to AVIF with sensible defaults (SVT-AV1, quality 60, speed 6).
     let bytes = avif::encode(&img)?;
 
-    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/encode-example.avif");
+    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/example_encode.avif");
     std::fs::write(out, &bytes)?;
 
     println!("encoded {} bytes -> {}", bytes.len(), out);

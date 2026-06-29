@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .with_threads(4), // worker threads (omit for auto-detect)
     )?;
 
-    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/custom-encoder-example.avif");
+    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/example_custom-encoder.avif");
     std::fs::write(out, &bytes)?;
 
     println!("encoded {} bytes (quality 80, speed 4) -> {}", bytes.len(), out);

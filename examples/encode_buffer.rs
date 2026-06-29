@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let bytes = avif::encode_buffer(&img)?;
 
-    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/encode-buffer-example.avif");
+    let out = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/example_encode-buffer.avif");
     std::fs::write(out, &bytes)?;
 
     println!("encoded {} bytes from an RgbaImage -> {}", bytes.len(), out);
