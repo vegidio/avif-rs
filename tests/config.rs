@@ -24,7 +24,10 @@ fn encodes_with_custom_config() {
     let mut buf = Vec::new();
     img.write_with_encoder(AvifEncoder::new(&mut buf).with_quality(20).with_speed(9))
         .expect("encode with custom quality/speed");
-    assert!(is_avif(&buf), "custom quality/speed output should be a valid AVIF stream");
+    assert!(
+        is_avif(&buf),
+        "custom quality/speed output should be a valid AVIF stream"
+    );
     assert_eq!(avif::decode(&buf).expect("decode").dimensions(), (w, h));
 
     // Explicit single worker thread.

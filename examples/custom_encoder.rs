@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     img.write_with_encoder(
         AvifEncoder::new(&mut bytes)
             .with_quality(80) // 0–100, higher = better quality
-            .with_speed(4)    // 0–10, slower = better compression
+            .with_speed(4) // 0–10, slower = better compression
             .with_threads(4), // worker threads (omit for auto-detect)
     )?;
 

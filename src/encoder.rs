@@ -7,10 +7,11 @@
 
 use std::io::Write;
 use std::ptr;
-use std::sync::Once;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, Once};
 
 use image::error::{EncodingError, ImageFormatHint, UnsupportedError, UnsupportedErrorKind};
-use image::{ExtendedColorType, ImageError, ImageEncoder, ImageResult};
+use image::{ExtendedColorType, ImageEncoder, ImageError, ImageResult};
 
 use crate::error::AvifError;
 use crate::ffi;
@@ -202,6 +203,37 @@ fn silence_svt_logs() {
     });
 }
 
+/// SVT-AV1 populates a global RTCD (SIMD function-pointer) table on its first encode, guarded by a once-flag that is
+/// not fully atomic. Two encodes starting at the same instant both run the setup; the second finds every pointer
+/// already set and floods stderr with `Pointer "..." is set before!` (emitted at Error level, so `SVT_LOG` can't
+/// suppress it). We serialize only the *first* encode — the one that triggers RTCD — then let every later encode run
+/// lock-free and fully parallel.
+fn serialize_first_encode<T>(run: impl FnOnce() -> Result<T, EncodeError>) -> Result<T, EncodeError> {
+    static INITIALIZED: AtomicBool = AtomicBool::new(false);
+    static INIT_LOCK: Mutex<()> = Mutex::new(());
+
+    if INITIALIZED.load(Ordering::Acquire) {
+        return run();
+    }
+
+    let guard = INIT_LOCK.lock().unwrap();
+    // Another thread may have finished RTCD init while we waited for the lock.
+    if INITIALIZED.load(Ordering::Relaxed) {
+        drop(guard);
+        return run();
+    }
+
+    let result = run();
+    // Mark initialized only on success: an `Ok` result means the encode reached `avifEncoderWrite`, so RTCD is now
+    // populated. An early failure (bad dimensions, unsupported color type) may not have run SVT init, so keep
+    // serializing until one encode actually gets through.
+    if result.is_ok() {
+        INITIALIZED.store(true, Ordering::Release);
+    }
+    drop(guard);
+    result
+}
+
 fn image_depth(bit_depth: BitDepth) -> u32 {
     match bit_depth {
         BitDepth::Eight => 8,
@@ -212,12 +244,32 @@ fn image_depth(bit_depth: BitDepth) -> u32 {
 
 impl EncoderConfig {
     /// Runs the full libavif encode pipeline, returning the encoded AVIF bytes.
-    fn encode(&self, buf: &[u8], width: u32, height: u32, color_type: ExtendedColorType) -> Result<Vec<u8>, EncodeError> {
+    ///
+    /// Serializes the very first encode in the process so SVT-AV1's one-time global RTCD setup runs exactly once (see
+    /// [`serialize_first_encode`]); every subsequent encode runs lock-free.
+    fn encode(
+        &self,
+        buf: &[u8],
+        width: u32,
+        height: u32,
+        color_type: ExtendedColorType,
+    ) -> Result<Vec<u8>, EncodeError> {
+        silence_svt_logs();
+        serialize_first_encode(|| self.encode_pipeline(buf, width, height, color_type))
+    }
+
+    /// The libavif encode pipeline proper: validate inputs, build the RGB image, and hand it to SVT-AV1.
+    fn encode_pipeline(
+        &self,
+        buf: &[u8],
+        width: u32,
+        height: u32,
+        color_type: ExtendedColorType,
+    ) -> Result<Vec<u8>, EncodeError> {
         if width == 0 || height == 0 {
             return Err(EncodeError::Avif(AvifError::InvalidDimensions { width, height }));
         }
 
-        silence_svt_logs();
         let layout = layout_for(color_type).ok_or(EncodeError::Unsupported(color_type))?;
 
         let expected = width as usize * height as usize * layout.src_channels * layout.sample_bytes;
@@ -250,7 +302,9 @@ impl EncoderConfig {
             );
 
             if image.is_null() {
-                return Err(EncodeError::Avif(AvifError::EncoderInit("avifImageCreate returned null".into())));
+                return Err(EncodeError::Avif(AvifError::EncoderInit(
+                    "avifImageCreate returned null".into(),
+                )));
             }
 
             let result = self.encode_into(image, pixels, &layout, width);
@@ -265,7 +319,13 @@ impl EncoderConfig {
     /// # Safety
     /// `image` must be a non-null pointer from `avifImageCreate`, and `pixels` must
     /// describe `width` columns laid out per `layout`.
-    unsafe fn encode_into(&self, image: *mut sys::avifImage, pixels: &[u8], layout: &Layout, width: u32) -> Result<Vec<u8>, EncodeError> {
+    unsafe fn encode_into(
+        &self,
+        image: *mut sys::avifImage,
+        pixels: &[u8],
+        layout: &Layout,
+        width: u32,
+    ) -> Result<Vec<u8>, EncodeError> {
         // SAFETY: upheld by this function's contract (see `# Safety`); all libavif
         // handles are checked for null and freed before returning.
         unsafe {
@@ -286,7 +346,9 @@ impl EncoderConfig {
 
             let encoder = sys::avifEncoderCreate();
             if encoder.is_null() {
-                return Err(EncodeError::Avif(AvifError::EncoderInit("avifEncoderCreate returned null".into())));
+                return Err(EncodeError::Avif(AvifError::EncoderInit(
+                    "avifEncoderCreate returned null".into(),
+                )));
             }
 
             (*encoder).codecChoice = sys::avifCodecChoice_AVIF_CODEC_CHOICE_SVT;
@@ -337,27 +399,17 @@ enum EncodeError {
 impl From<EncodeError> for ImageError {
     fn from(err: EncodeError) -> Self {
         match err {
-            EncodeError::Unsupported(color_type) => ImageError::Unsupported(
-                UnsupportedError::from_format_and_kind(
-                    ImageFormatHint::Name("AVIF".into()),
-                    UnsupportedErrorKind::Color(color_type),
-                ),
-            ),
-            EncodeError::Avif(e) => {
-                ImageError::Encoding(EncodingError::new(ImageFormatHint::Name("AVIF".into()), e))
-            }
+            EncodeError::Unsupported(color_type) => ImageError::Unsupported(UnsupportedError::from_format_and_kind(
+                ImageFormatHint::Name("AVIF".into()),
+                UnsupportedErrorKind::Color(color_type),
+            )),
+            EncodeError::Avif(e) => ImageError::Encoding(EncodingError::new(ImageFormatHint::Name("AVIF".into()), e)),
         }
     }
 }
 
 impl<W: Write> ImageEncoder for AvifEncoder<W> {
-    fn write_image(
-        mut self,
-        buf: &[u8],
-        width: u32,
-        height: u32,
-        color_type: ExtendedColorType,
-    ) -> ImageResult<()> {
+    fn write_image(mut self, buf: &[u8], width: u32, height: u32, color_type: ExtendedColorType) -> ImageResult<()> {
         let encoded = self.config.encode(buf, width, height, color_type)?;
         self.writer.write_all(&encoded).map_err(ImageError::IoError)?;
         Ok(())

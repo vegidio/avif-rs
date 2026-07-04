@@ -23,6 +23,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     assert_eq!(decoded.dimensions(), (w, h), "round-trip changed the dimensions");
 
-    println!("round-trip OK: {}x{} -> {} AVIF bytes -> {}x{}", w, h, bytes.len(), decoded.width(), decoded.height());
+    println!(
+        "round-trip OK: {}x{} -> {} AVIF bytes -> {}x{}",
+        w,
+        h,
+        bytes.len(),
+        decoded.width(),
+        decoded.height()
+    );
     Ok(())
 }

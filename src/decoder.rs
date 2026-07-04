@@ -8,7 +8,7 @@
 use std::io::Read;
 
 use image::error::{DecodingError, ImageFormatHint};
-use image::{ColorType, ImageError, ImageDecoder, ImageResult};
+use image::{ColorType, ImageDecoder, ImageError, ImageResult};
 
 use crate::error::AvifError;
 use crate::ffi;
@@ -67,7 +67,9 @@ impl<R: Read> AvifDecoder<R> {
         unsafe {
             let decoder = sys::avifDecoderCreate();
             if decoder.is_null() {
-                return Err(to_image_error(AvifError::DecoderInit("avifDecoderCreate returned null".into())));
+                return Err(to_image_error(AvifError::DecoderInit(
+                    "avifDecoderCreate returned null".into(),
+                )));
             }
             (*decoder).codecChoice = sys::avifCodecChoice_AVIF_CODEC_CHOICE_DAV1D;
 

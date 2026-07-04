@@ -21,9 +21,7 @@ const VERSION: &str = "26.6.1";
 
 /// Static archives ship these `.a` libraries. Listed dependents-before-dependencies so
 /// that GNU ld's single-pass resolution finds every symbol.
-const STATIC_LIBS: &[&str] = &[
-    "avif", "SvtAv1Enc", "dav1d", "yuv", "jpeg", "turbojpeg", "fastfeat",
-];
+const STATIC_LIBS: &[&str] = &["avif", "SvtAv1Enc", "dav1d", "yuv", "jpeg", "turbojpeg", "fastfeat"];
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -65,9 +63,7 @@ fn download_and_extract() -> PathBuf {
         return cache_dir;
     }
 
-    let url = format!(
-        "https://github.com/vegidio/binaries-avif/releases/download/{VERSION}/{archive}"
-    );
+    let url = format!("https://github.com/vegidio/binaries-avif/releases/download/{VERSION}/{archive}");
     eprintln!("avif-rs: downloading {url}");
 
     let bytes = download(&url);
