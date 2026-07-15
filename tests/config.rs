@@ -2,7 +2,7 @@
 //! valid AVIF that decodes back to the original dimensions.
 //!
 //! The scenarios share a single `#[test]` so their encodes run sequentially. The
-//! bundled SVT-AV1 (v3.1.2) segfaults when encodes with *different* configurations
+//! bundled SVT-AV1 (v4.1.0) segfaults when encodes with *different* configurations
 //! run concurrently in one process (shared global encoder state); these scenarios use
 //! different settings, so as separate parallel tests they crash. Parallel encoding with
 //! a *uniform* config is fine — only the heterogeneous case is unsafe. Keeping these
