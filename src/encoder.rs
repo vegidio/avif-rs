@@ -190,6 +190,11 @@ fn expand_gray(buf: &[u8], sample_bytes: usize, alpha: bool) -> Vec<u8> {
 /// verbosity threshold from the `SVT_LOG` environment variable exactly once, on first use, so we lower it to `1`
 /// (errors + fatal only, silencing the info/warn banners) before the first encode. A caller who has already set
 /// `SVT_LOG` keeps their choice.
+///
+/// On Windows, setting the variable through `std` is not enough: `std::env::set_var` calls `SetEnvironmentVariableW`,
+/// while SVT-AV1 reads it with the C runtime's `getenv`, which consults the UCRT's own copy of the environment, taken
+/// at startup. `_putenv_s` writes that copy. Rust on MSVC links the same dynamic UCRT as the bundled `/MD` libraries,
+/// so this is the environment SVT-AV1 sees.
 fn silence_svt_logs() {
     static INIT: Once = Once::new();
     INIT.call_once(|| {
@@ -199,8 +204,20 @@ fn silence_svt_logs() {
             unsafe {
                 std::env::set_var("SVT_LOG", "1");
             }
+
+            // SAFETY: as above; both arguments are NUL-terminated literals.
+            #[cfg(windows)]
+            unsafe {
+                _putenv_s(c"SVT_LOG".as_ptr(), c"1".as_ptr());
+            }
         }
     });
+}
+
+#[cfg(windows)]
+unsafe extern "C" {
+    /// The UCRT's own environment setter; see [`silence_svt_logs`].
+    fn _putenv_s(name: *const std::ffi::c_char, value: *const std::ffi::c_char) -> std::ffi::c_int;
 }
 
 /// SVT-AV1 populates a global RTCD (SIMD function-pointer) table on its first encode, guarded by a once-flag that is
