@@ -7,7 +7,7 @@
 //!
 //! The API mirrors the `image` crate's codec conventions:
 //! * [`AvifEncoder`] / [`AvifDecoder`] implement `image`'s `ImageEncoder` / `ImageDecoder` traits, so they plug into
-//! `DynamicImage::write_with_encoder` / `DynamicImage::from_decoder` just like the codecs bundled with `image`.
+//!   `DynamicImage::write_with_encoder` / `DynamicImage::from_decoder` just like the codecs bundled with `image`.
 //! * a thin facade ([`encode`], [`encode_buffer`], [`decode`], [`probe`]) wraps those for one-line convenience.
 
 mod decoder;

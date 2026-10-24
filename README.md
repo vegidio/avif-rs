@@ -104,7 +104,7 @@ This is a limitation of the underlying SVT-AV1 C library, not of the wrapper. De
 
 ### My build fails because it can't download the binaries
 
-The first build fetches the prebuilt static libraries for your platform over the network. For offline or air-gapped builds, download the archive for your target from [binaries-avif](https://github.com/vegidio/binaries-avif/releases), extract it, and point the build at it with the `AVIF_BINARIES_DIR` environment variable:
+The first build fetches the prebuilt static libraries for your platform over the network. For offline or air-gapped builds, download the `bundle_<os>_<arch>.zip` archive for your target from [binaries-avif](https://github.com/vegidio/binaries-avif/releases), extract it, and point the build at it with the `AVIF_BINARIES_DIR` environment variable:
 
 ```
 $ AVIF_BINARIES_DIR=/path/to/extracted/libs cargo build
